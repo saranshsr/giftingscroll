@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Birthday Gifting Scroll</title>
+<style>
+  @font-face { font-family: Noontree; src: url(assets/fonts/Noontree-Regular.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: Noontree; src: url(assets/fonts/Noontree-Medium.woff2) format("woff2"); font-weight: 500; }
+  @font-face { font-family: Noontree; src: url(assets/fonts/Noontree-SemiBold.woff2) format("woff2"); font-weight: 600; }
+  @font-face { font-family: Noontree; src: url(assets/fonts/Noontree-Bold.woff2) format("woff2"); font-weight: 700; }
+
+  :root {
+    --text-primary: #1d2539;
+    --text-secondary: #475067;
+    --text-tertiary: #666d85;
+    --text-success: #0f8857;
+    --text-action: #0f61ff;
+    --surface-primary: #fff;
+    --surface-secondary: #f9f9fb;
+    --surface-tertiary: #f2f3f7;
+    --border-subtle: #f2f3f7;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #e9eaef;
+    font-family: Noontree, system-ui, sans-serif;
+    color: var(--text-primary);
+    display: grid; place-items: center; align-content: safe center; gap: 20px; padding: 24px 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { display: block; }
+
+  .phone {
+    position: relative; width: 375px; height: 812px;
+    border-radius: 24px; overflow: hidden; isolation: isolate;
+    background: var(--surface-primary);
+    box-shadow: 0 30px 80px rgba(29, 37, 57, .18);
+  }
+  /* variant switch: sits under the phone on desktop, floats over the feed on a phone */
+  .switch {
+    position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 999px;
+    background: rgba(255, 255, 255, .72); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 6px 24px rgba(29, 37, 57, .12), inset 0 0 0 .5px rgba(29, 37, 57, .08);
+    justify-self: center; z-index: 5;
+  }
+  .switch button {
+    position: relative; z-index: 1; border: 0; background: none; cursor: pointer;
+    padding: 8px 18px; font: 600 13px/18px Noontree, sans-serif; letter-spacing: -.1px; color: var(--text-tertiary);
+    transition: color .2s;
+  }
+  .switch button[aria-pressed="true"] { color: var(--text-primary); }
+  .switch .thumb {
+    position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px;
+    background: #fff; box-shadow: 0 2px 8px rgba(29, 37, 57, .12);
+    transition: transform .32s cubic-bezier(.2, .9, .3, 1);
+  }
+  .switch.sq .thumb { transform: translateX(100%); }
+  @media (prefers-reduced-motion: reduce) { .switch .thumb { transition: none; } }
+
+  @media (max-width: 500px) {
+    .switch { position: fixed; left: 50%; translate: -50% 0; bottom: calc(env(safe-area-inset-bottom) + 72px); }
+    body { display: block; padding: 0; }
+    .phone { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
+    body { background: #fff; }
+    .phone .grid { width: calc(100% - 24px); }
+    .phone .card { width: calc((100% - 11px) / 2); }
+  }
+
+  /* ---------- scroll content ---------- */
+  .scroller {
+    position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .scroller::-webkit-scrollbar { display: none; }
+  /* Touch keeps the browser's own momentum; snapping is declared, not scripted.
+     The second area is taller than the viewport, so past 144px the feed scrolls freely
+     and only the 0–144 header zone settles to open / closed. */
+  .scroller.snap { scroll-snap-type: y mandatory; }
+  .snap-pt { position: absolute; left: 0; width: 1px; scroll-snap-align: start; pointer-events: none; }
+  .grid { will-change: transform; }
+  .grid {
+    width: 351px; margin: 0 auto; padding: 272px 0 24px;
+    display: flex; flex-wrap: wrap; gap: 11px;
+  }
+
+  .card {
+    width: 170px; background: #fff; border: .75px solid var(--border-subtle);
+    border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card-img { height: 220px; background: var(--surface-secondary); }
+  /* multiply drops the photos' white backdrops into the card's grey surface */
+  .card-img img { width: 100%; height: 100%; mix-blend-mode: multiply; }
+  .card-body { padding: 8px; display: flex; flex-direction: column; gap: 12px; }
+  .card-info { display: flex; flex-direction: column; gap: 6px; }
+  .card-top { display: flex; flex-direction: column; gap: 4px; }
+  .name {
+    font-weight: 500; font-size: 12px; line-height: 16px; height: 16px; letter-spacing: -.1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rating {
+    align-self: flex-start; height: 18px; padding: 2px 4px; gap: 2px;
+    display: flex; align-items: center; background: var(--surface-tertiary); border-radius: 4.067px;
+    font-size: 12.202px; line-height: 14px; letter-spacing: -.12px; font-feature-settings: "case" 1;
+  }
+  .star { position: relative; width: 12px; height: 11.5px; }
+  .star img { position: absolute; inset: 7.05% 6.09% 4.83% 6.09%; width: auto; height: auto; }
+  .rating b { font-weight: 600; }
+  .rating span { color: var(--text-tertiary); }
+  .price { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; }
+  .price .sp { font-weight: 700; font-size: 14px; line-height: 18px; letter-spacing: -.1px; font-feature-settings: "liga" 1; } /* dhm → dirham glyph; letter-spacing would otherwise disable it */
+  .price .lp { font-size: 12px; line-height: 16px; letter-spacing: -.1px; color: var(--text-tertiary); text-decoration: line-through; }
+  .price .off { font-weight: 600; font-size: 12px; line-height: 16px; letter-spacing: -.1px; color: var(--text-success); }
+  .btn {
+    height: 36px; border: 0; border-radius: 8px; background: #ebf0fd; color: var(--text-action);
+    font: 600 12px/16px Noontree, sans-serif; display: flex; align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer; transition: transform .16s cubic-bezier(.2, 0, 0, 1), background-color .16s;
+  }
+  .btn:active { transform: scale(.97); background: #dfe7fc; }
+
+  /* ---------- header ---------- */
+  .header {
+    position: absolute; left: 0; top: 0; width: 100%; height: 416px; z-index: 2;
+    pointer-events: none;
+    /* bottom inset is driven from JS: 416 - currentHeight */
+    clip-path: inset(0 0 156px 0 round 0 0 24px 24px);
+  }
+  .header > * { pointer-events: auto; }
+  .hin { position: absolute; inset: 0; }
+  /* artwork keeps its 375px composition, centred on wider screens */
+  .decos { position: absolute; left: 50%; top: 0; width: 375px; height: 416px; margin-left: -187.5px; }
+  .decos > * { position: absolute; }
+  #bgFill, #bgGlow, .decos { will-change: transform; }
+  .bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+        background: linear-gradient(#ffbeac 16.047%, #ff7373 123.98%); }
+  .bg > * { position: absolute; }
+  .bg .fill { inset: 0; width: 100%; height: 100%; }
+  .deco { display: flex; align-items: center; justify-content: center; }
+  .deco > div { flex: none; position: relative; }
+  .deco img { position: absolute; max-width: none; }
+
+  .statusbar { position: absolute; left: 0; top: 0; width: 100%; height: 42px; }
+  .statusbar .time {
+    position: absolute; left: 21px; top: 7px; width: 54px; height: 21px; text-align: center;
+    font: 600 15px/21px -apple-system, "SF Pro Text", system-ui, sans-serif; letter-spacing: -.3px; color: #000;
+  }
+  .statusbar img { position: absolute; }
+
+  .pagebar {
+    position: absolute; left: 0; top: 48px; width: 100%; height: 56px; padding: 8px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .iconbtn {
+    width: 40px; height: 40px; border-radius: 9999px; background: #fff;
+    border: 1px solid transparent; display: grid; place-items: center; cursor: pointer; padding: 0;
+  }
+  .iconbtn img { width: 20px; height: 20px; }
+  /* feedback on press-down, instant */
+  .iconbtn:active img, .pill:active { transform: scale(.94); }
+  .iconbtn img, .pill { transition: transform 100ms ease-out; }
+  .trailing { will-change: transform, opacity; }
+
+  .title {
+    position: absolute; left: calc(50% - 125px); top: 116px; width: 250px; text-align: center;
+    font-weight: 700; font-size: 28px; line-height: 36px; letter-spacing: -.25px;
+    transform-origin: 50% 50%; will-change: transform;
+  }
+  .subtitle {
+    position: absolute; left: 0; right: 0; top: 80px; text-align: center;
+    font-size: 12px; line-height: 16px; letter-spacing: -.1px; color: var(--text-secondary);
+    will-change: transform, opacity;
+  }
+  .date {
+    position: absolute; left: 0; right: 0; top: 156px;
+    display: flex; gap: 2px; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 20px; letter-spacing: -.1px; will-change: transform, opacity;
+  }
+  .date .t { display: flex; gap: 4px; align-items: center; }
+  .date .m { font-weight: 500; }
+  .date b { font-weight: 700; }
+  .pill-wrap { position: absolute; left: 0; right: 0; top: 196px; display: flex; justify-content: center; will-change: transform, opacity; }
+  .pill {
+    display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 40px;
+    border: .769px solid #fff; box-shadow: 0 6px 32px rgba(0, 0, 0, .08); cursor: pointer;
+    background: linear-gradient(rgba(255, 255, 255, .4), rgba(242, 243, 247, .4));
+    font: 400 13px/20px Noontree, sans-serif; letter-spacing: -.1px; color: var(--text-primary);
+  }
+  .pill .ico {
+    padding: 8px; border-radius: 40px; border: .769px solid #fff; box-shadow: 0 6px 32px rgba(0, 0, 0, .08);
+    background: linear-gradient(rgba(255, 255, 255, .4), rgba(242, 243, 247, .4));
+  }
+  .pill .ico img { width: 16px; height: 16px; }
+  .pill .lbl { display: flex; gap: 4px; align-items: center; }
+  .pill b { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="scroller" id="scroller">
+    <div class="snap-pt" style="top:0;height:1px"></div>
+    <div class="snap-pt" id="snapFeed" style="top:144px"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <header class="header" id="header">
+  <div class="hin">
+    <div class="bg">
+      <img class="fill" id="bgFill" src="assets/imgBgBirthday.svg" alt="" />
+      <img id="bgGlow" src="assets/imgEllipse24199.svg" alt="" style="width:773px;height:774px;left:calc(50% + .03px);top:-241.83px;translate:-50% 0;mix-blend-mode:soft-light" />
+      <div class="decos" id="decos">
+      <!-- confetti + gifts: positions/rotations from Figma BG - Birthday -->
+      <div class="deco" style="left:301.31px;top:148.86px;width:18.04px;height:18.61px">
+        <div style="width:15.15px;height:14.31px;rotate:73.41deg;filter:blur(2px)"><img src="assets/imgObject.png" alt="" style="left:3.09%;top:3.3%;width:96.61%;height:93.79%" /></div></div>
+      <div class="deco" style="left:-19.2px;top:118.58px;width:81.85px;height:84.57px">
+        <div style="width:72.76px;height:75.9px;rotate:7.33deg;filter:blur(6px)"><img src="assets/imgObject1.png" alt="" style="left:.38%;top:.77%;width:98.84%;height:98.85%" /></div></div>
+      <div class="deco" style="left:70.32px;top:-12.62px;width:67.59px;height:57.17px">
+        <div style="width:58.36px;height:34.33px;rotate:27.14deg"><img src="assets/imgGroup2147241744.svg" alt="" style="inset:-8.74% -5.14%;width:110.28%;height:117.48%" /></div></div>
+      <div style="left:293.22px;top:61.41px;width:8.09px;height:8.09px;mix-blend-mode:screen">
+        <img src="assets/imgVector.svg" alt="" style="position:absolute;inset:-24.72%;width:149.44%;height:149.44%" /></div>
+      <div class="deco" style="left:258.84px;top:62.77px;width:23.37px;height:23.37px;mix-blend-mode:screen">
+        <div style="width:22.56px;height:22.56px;rotate:2.1deg"><img src="assets/imgVector1.svg" alt="" style="inset:-12.8%;width:125.6%;height:125.6%" /></div></div>
+      <div style="left:329px;top:143px;width:93.61px;height:125.02px;filter:blur(4px);overflow:hidden">
+        <img src="assets/imgObject2.png" alt="" style="position:absolute;left:.75%;top:.26%;width:98.31%;height:99.44%" /></div>
+      <div class="deco" style="left:74.27px;top:69.5px;width:20.57px;height:20.34px">
+        <div style="width:15.16px;height:14.31px;rotate:146deg;scale:-1 1"><img src="assets/imgObject.png" alt="" style="left:3.09%;top:3.3%;width:96.61%;height:93.79%" /></div></div>
+      <div class="deco" style="left:65.67px;top:166px;width:14.66px;height:14.86px">
+        <div style="width:11.04px;height:10.43px;rotate:-58.5deg;scale:-1 1;filter:blur(2px)"><img src="assets/imgObject.png" alt="" style="left:3.09%;top:3.3%;width:96.61%;height:93.79%" /></div></div>
+      <div class="deco" style="left:-4.88px;top:211.1px;width:14.65px;height:14.85px">
+        <div style="width:11.04px;height:10.42px;rotate:-58.5deg;scale:-1 1;filter:blur(3.5px)"><img src="assets/imgObject.png" alt="" style="left:3.09%;top:3.3%;width:96.61%;height:93.79%" /></div></div>
+      <div class="deco" style="left:345.46px;top:84.49px;width:67.83px;height:68.64px">
+        <div style="width:54.42px;height:53.13px;rotate:71.2deg;filter:blur(3.5px)"><img src="assets/imgObject3.png" alt="" style="left:.19%;top:1.33%;width:99.36%;height:98.27%" /></div></div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <div class="time">9:41</div>
+      <img src="assets/imgCellularConnection.svg" alt="" style="right:64px;top:16.86px;width:17px;height:10.18px" />
+      <img src="assets/imgWifi.svg" alt="" style="right:43.66px;top:16.54px;width:15.33px;height:10.5px" />
+      <img src="assets/imgBattery.svg" alt="" style="right:14.34px;top:17.33px;width:24.33px;height:11.33px" />
+    </div>
+
+    <p class="subtitle" id="subtitle">Delivering to Prasanna</p>
+    <h1 class="title" id="title">Prasanna’s Birthday</h1>
+    <div class="date" id="date">
+      <img src="assets/imgMIconSystemIconCalendar.svg" alt="" width="16" height="16" />
+      <div class="t"><span class="m">14th June</span><img src="assets/imgEllipse24339.svg" alt="" width="3" height="3" /><b>20 days to go!</b></div>
+    </div>
+    <div class="pill-wrap" id="pill">
+      <button class="pill" type="button">
+        <span class="ico"><img src="assets/imgMIconSystemIconLocationBase.svg" alt="" /></span>
+        <span class="lbl">Delivering to <b>Prasanna</b><img src="assets/imgMIconSystemIconChevronBottomBold.svg" alt="" width="14" height="14" /></span>
+      </button>
+    </div>
+
+    <div class="pagebar">
+      <button class="iconbtn" id="close" type="button" aria-label="Close"><img src="assets/imgMIconSystemIconCross.svg" alt="" /></button>
+      <button class="iconbtn trailing" id="trailing" type="button" aria-label="Change delivery location"><img src="assets/imgLocationCompact.svg" alt="" /></button>
+    </div>
+  </div>
+  </header>
+</div>
+<div class="switch" id="switch" role="group" aria-label="Header corners">
+  <span class="thumb"></span>
+  <button type="button" data-v="rounded">Rounded</button>
+  <button type="button" data-v="square">Square</button>
+</div>
+
+<script>
+const PRODUCTS = [
+  ['Bajaj MX 45 Steam Aluminium Soleplate Iron | 2000 Watts Power For ', 161, 299, 'imgRectangle427321362.png', 'contain'],
+  ['Roseate Birch Super Soft (40x60 cm) Microfiber 2000 GSM Bath Mat Super ', 24, 99, 'imgRectangle427321363.png', 'cover'],
+  ['Compatible with Versace Pour Homme E', 799, 999, 'imgRectangle427321364.png', 'contain', 255 / 247], // backdrop is #f7f7f7, lift it to white
+  ['Blue Eau de Toilette for Men | Long Lasting Fresh', 499, 899, 'imgRectangle427321365.png', 'contain'],
+  ['Roseate Happy Super Soft Anti-Skid (40x60 cm) Super Absorbent Mats', 49, 399, 'imgRectangle427321366.png', 'cover'],
+  ['Apple Airpods Pro 2 Wireless Earbuds', 899, 1399, 'imgRectangle427321367.png', 'cover'],
+];
+const grid = document.getElementById('grid');
+// Figma repeats the first two after the six; keep the list long enough to feel like a feed
+const feed = [...PRODUCTS, ...PRODUCTS.slice(0, 2), ...PRODUCTS, ...PRODUCTS.slice(0, 2)];
+grid.innerHTML = feed.map(([name, sp, lp, img, fit, lift = 1]) => `
+  <article class="card">
+    <div class="card-img"><img src="assets/${img}" alt="" style="object-fit:${fit}${lift !== 1 ? `;filter:brightness(${lift})` : ''}" loading="lazy" /></div>
+    <div class="card-body">
+      <div class="card-info">
+        <div class="card-top">
+          <p class="name">${name}</p>
+          <div class="rating"><span class="star"><img src="assets/imgVector2.svg" alt="" /></span><span style="color:inherit"><b>4.3 </b><span>(128)</span></span></div>
+        </div>
+        <div class="price"><span class="sp">dhm${sp}</span><span class="lp">${lp}</span><span class="off">33%</span></div>
+        <img src="assets/imgHpEta.svg" alt="express Today" width="122" height="18" />
+      </div>
+      <button class="btn" type="button"><img src="assets/imgIconLeft.svg" alt="" width="16" height="16" />Add to bag</button>
+    </div>
+  </article>`).join('');
+
+// ---------- collapsing header ----------
+const OPEN = 260, CLOSED = 116;
+const RANGE = 144; // 144px of scroll drives the whole transition
+const $ = id => document.getElementById(id);
+const scroller = $('scroller'), header = $('header'), title = $('title'), subtitle = $('subtitle');
+const date = $('date'), pill = $('pill'), close = $('close'), trailing = $('trailing');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (p, a, b) => clamp((p - a) / (b - a)); // remap p into a sub-range
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// Big title (28px, centre y 134) lands exactly on the compact title slot (16px, centre y 66)
+// ?v=square: Figma 2414:157401 — the collapsed header loses its rounded bottom
+let SQUARE = new URLSearchParams(location.search).get('v') === 'square';
+const sw = $('switch');
+function setVariant(sq) {
+  SQUARE = sq;
+  sw.classList.toggle('sq', sq);
+  sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === 'square') === sq)));
+  history.replaceState(null, '', sq ? '?v=square' : location.pathname); // the link always reflects what you see
+  render(y);
+}
+sw.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setVariant(b.dataset.v === 'square'); });
+
+const TITLE_SCALE = 16 / 28, TITLE_DY = 66 - 134;
+
+// y < 0 means pulled past the top: the header stretches (rubber band) instead of stopping dead.
+// `synthetic` = we produced the overscroll (wheel); native iOS bounce already moves the content.
+function render(y, synthetic = false) {
+  const over = Math.max(0, -y);
+  const p = clamp(y / RANGE);
+  const h = OPEN - RANGE * p + over;
+  const r = SQUARE ? 24 * (1 - seg(p, .3, 1)) : 24;   // corners square off as it docks
+  header.style.clipPath = `inset(0 0 ${416 - h}px 0 round 0 0 ${r}px ${r}px)`;
+
+  // parallax: backdrop drifts slower than the scroll, confetti a touch more (it reads as nearer)
+  const py = Math.min(y, RANGE);
+  const back = `translateY(${-.18 * Math.max(0, py)}px)`;
+  $('bgFill').style.transform = back;
+  $('bgGlow').style.transform = back;
+  $('decos').style.transform = `translateY(${-.32 * py}px)`;
+  $('grid').style.transform = synthetic && over ? `translateY(${over}px)` : '';
+  const drop = over * .5; // contents stay centred in the stretched header
+
+  title.style.transform = `translateY(${TITLE_DY * p + drop}px) scale(${lerp(1, TITLE_SCALE, p)})`;
+
+  const out1 = seg(p, 0, .45);           // date leaves first
+  date.style.opacity = 1 - out1;
+  date.style.transform = `translateY(${-56 * p + drop}px) scale(${lerp(1, .92, out1)})`;
+
+  const out2 = seg(p, .05, .6);          // pill follows a beat behind
+  pill.style.opacity = 1 - out2;
+  pill.style.transform = `translateY(${-80 * p + drop}px) scale(${lerp(1, .9, out2)})`;
+
+  const in1 = seg(p, .55, 1);            // compact bits arrive as the header settles
+  // subtitle hangs off the title's live bottom edge, so the two can never overlap mid-move
+  const titleBottom = 134 + TITLE_DY * p + drop + 18 * lerp(1, TITLE_SCALE, p);
+  const restBottom = 66 + 18 * TITLE_SCALE;       // where the title's bottom lands when docked
+  subtitle.style.opacity = seg(p, .7, 1);
+  subtitle.style.transform = `translateY(${titleBottom - restBottom}px)`;
+  close.style.borderColor = `rgba(242,243,247,${seg(p, .6, 1)})`;
+
+  // location button appears in its own slot; it never travels
+  trailing.style.opacity = in1;
+  trailing.style.transform = `scale(${lerp(.6, 1, in1)})`;
+  trailing.style.pointerEvents = p > .6 ? 'auto' : 'none';
+}
+
+// ---------- motion engine ----------
+// One value `y` (scroll position, negative = overscroll). Springs move it; input grabs it.
+const D = 812;
+// progressive resistance past the edge; a hint, not a stretch — tends to 40px however hard you pull
+const OVER = 40;
+const rubber = x => (x * OVER * .55) / (OVER + .55 * x);
+const unrubber = r => (r * OVER) / (.55 * (OVER - r)); // inverse, so a grab mid-bounce doesn't jump
+const max = () => scroller.scrollHeight - scroller.clientHeight;
+
+let y = 0, v = 0, spring = null, raf = 0, lastT = 0, expected = 0;
+const samples = [];                                  // short position history → velocity
+function sample(t = performance.now()) {
+  samples.push([t, y]);
+  while (samples.length > 2 && t - samples[0][0] > 100) samples.shift();
+}
+function velocity() {
+  if (samples.length < 2) return 0;
+  const [t0, y0] = samples[0], [t1, y1] = samples[samples.length - 1];
+  return t1 - t0 > 0 ? (y1 - y0) / (t1 - t0) * 1000 : 0; // px/s
+}
+// Apple's projection: where would momentum carry this if left alone?
+const project = (vel, d = .998) => (vel / 1000) * d / (1 - d);
+
+function apply(synthetic = true) {
+  const top = Math.max(0, Math.min(y, max()));
+  expected = top;
+  if (scroller.scrollTop !== top) scroller.scrollTop = top;
+  render(y, synthetic);
+}
+
+// response = seconds to (almost) reach target; damping 1 = critically damped, no overshoot
+function springTo(target, response = .4, damping = 1) {
+  spring = { target, k: (2 * Math.PI / response) ** 2, c: 4 * Math.PI * damping / response };
+  if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); }
+}
+function tick(now) {
+  const dt = Math.min(.064, (now - lastT) / 1000); lastT = now;
+  if (spring) {
+    const n = Math.ceil(dt / .004), h = dt / n;      // small fixed substeps keep stiff springs stable
+    for (let i = 0; i < n; i++) {
+      v += (-spring.k * (y - spring.target) - spring.c * v) * h;
+      y += v * h;
+    }
+    if (Math.abs(y - spring.target) < .3 && Math.abs(v) < 8) { y = spring.target; v = 0; spring = null; }
+    apply();
+    sample(now);
+  }
+  raf = spring ? requestAnimationFrame(tick) : 0;
+}
+function grab() { spring = null; }                   // any input takes over from the live value + velocity
+
+// Settle the header zone: decide from where the motion is *going*, not where it is.
+function settle() {
+  if (y < 0) return springTo(0, .3);              // let go of the rubber band
+  // a wheel glide already knows where it lands; otherwise project the release velocity
+  const landing = spring ? spring.target : y + project(v || velocity());
+  if (landing >= RANGE && y >= 0) return;
+  springTo(landing < RANGE / 2 ? 0 : RANGE, reduced.matches ? .2 : .4);
+}
+
+// ---- wheel / trackpad ----
+let idle = 0, lastAbs = 0, lastWheel = 0, shrinks = 0, bouncing = false;
+scroller.addEventListener('wheel', e => {
+  e.preventDefault();
+  scroller.classList.remove('snap');                 // script owns snapping for wheel input
+  const dy = e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? D : 1);
+  // A mouse wheel clicks in coarse notches; a trackpad streams fine deltas with its own momentum.
+  const notch = e.deltaMode !== 0 || (Math.abs(e.wheelDeltaY) >= 120 && e.wheelDeltaY % 120 === 0);
+
+  if (notch && !reduced.matches) {
+    // glide to the notch target on a spring; re-targeting keeps the current velocity (no brick wall)
+    const base = spring ? spring.target : y;
+    springTo(clamp(base + dy, 0, max()), .3);
+  } else {
+    // trackpad: 1:1, zero added latency
+    const now = performance.now(), abs = Math.abs(dy);
+    const fresh = now - lastWheel > 120;             // a pause means a new gesture
+    shrinks = !fresh && abs < lastAbs ? shrinks + 1 : 0;
+    const decaying = shrinks >= 2;                   // steadily shrinking deltas = OS momentum, fingers are off
+    lastWheel = now; lastAbs = abs;
+    // Past the top, momentum is not a pull: release the band now instead of riding out the tail.
+    if (dy < 0 && y <= 0) {
+      if (bouncing && !fresh) { clearTimeout(idle); return; }                 // swallow the tail
+      if (decaying && y < 0) { bouncing = true; v = 0; clearTimeout(idle); return springTo(0, .3); }
+    }
+    bouncing = false;
+    grab();
+    const prev = y;
+    if (y < 0 || y + dy < 0) {
+      let raw = y < 0 ? unrubber(-y) : -(y);         // raw overscroll so far (negative = still in content)
+      raw -= dy;
+      y = raw > 0 ? (reduced.matches ? 0 : -rubber(raw)) : -raw;
+    } else {
+      y = Math.min(y + dy, max());
+    }
+    v = (y - prev) / Math.max(.008, (performance.now() - (samples.at(-1)?.[0] ?? 0)) / 1000);
+    sample();
+    apply();
+  }
+  clearTimeout(idle);
+  idle = setTimeout(() => { v = velocity(); settle(); }, 90);
+}, { passive: false });
+
+// ---- touch: native momentum + CSS snap; we only mirror the position ----
+scroller.addEventListener('touchstart', () => {
+  grab(); clearTimeout(idle);
+  scroller.classList.add('snap');
+}, { passive: true });
+
+scroller.addEventListener('scroll', () => {
+  if (Math.abs(scroller.scrollTop - expected) < 1 && spring) return; // our own write
+  y = scroller.scrollTop;                            // can be negative during iOS bounce → header stretches
+  expected = y;
+  sample();
+  render(y, false);
+}, { passive: true });
+
+// tapping the collapsed header scrolls back to the top (status-bar tap)
+header.addEventListener('click', e => {
+  if (e.target.closest('button') || y <= 0) return;
+  scroller.classList.remove('snap');
+  v = 0; springTo(0, y > 1500 ? .6 : .45);
+});
+
+function layout() {
+  $('snapFeed').style.height = `${scroller.scrollHeight - RANGE}px`;
+  render(y);
+}
+document.fonts.ready.then(layout);
+addEventListener('resize', layout);
+render(0);
+setVariant(SQUARE);
+</script>
+</body>
+</html>
